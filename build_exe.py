@@ -10,6 +10,11 @@ import sys
 import subprocess
 from pathlib import Path
 
+# 设置环境变量以支持中文字符
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+if sys.platform == "win32":
+    os.environ['PYTHONUTF8'] = '1'
+
 def build_executable():
     """使用Nuitka构建可执行文件"""
     
@@ -68,7 +73,8 @@ def build_executable():
         os.makedirs("dist", exist_ok=True)
         
         # 执行构建
-        result = subprocess.run(build_cmd, cwd=project_root, check=True)
+        result = subprocess.run(build_cmd, cwd=project_root, check=True, 
+                              encoding='utf-8', text=True)
         
         if result.returncode == 0:
             exe_path = project_root / "dist" / "ZStockTrader.exe"

@@ -10,6 +10,11 @@ import os
 import json
 from pathlib import Path
 
+# 设置环境变量以支持中文字符
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+if sys.platform == "win32":
+    os.environ['PYTHONUTF8'] = '1'
+
 def test_imports():
     """测试模块导入"""
     print("🔍 测试模块导入...")

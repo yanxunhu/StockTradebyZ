@@ -34,6 +34,16 @@ class StockTradingGUI:
         self.root.geometry("1000x700")
         self.root.configure(bg='#f0f0f0')
         
+        # 设置默认字体以支持中文显示
+        try:
+            self.root.option_add('*Font', 'Microsoft\\ YaHei 9')
+            self.root.option_add('*TkDefaultFont', 'Microsoft\\ YaHei 9')
+            self.root.option_add('*TkTextFont', 'Microsoft\\ YaHei 9')
+            self.root.option_add('*TkFixedFont', 'Microsoft\\ YaHei 9')
+        except Exception:
+            # 如果字体设置失败，使用系统默认字体
+            pass
+        
         # 设置样式
         self.setup_styles()
         
@@ -163,8 +173,8 @@ class StockTradingGUI:
         self.notebook.add(select_frame, text="策略选股")
         
         # 策略选择区域
-        strategy_frame = ttk.LabelFrame(select_frame, text="策略选择", padding=10)
-        strategy_frame.pack(fill='x', padx=10, pady=5)
+        self.strategy_frame = ttk.LabelFrame(select_frame, text="策略选择", padding=10)
+        self.strategy_frame.pack(fill='x', padx=10, pady=5)
         
         # 策略列表
         self.strategy_vars = {}
@@ -188,6 +198,11 @@ class StockTradingGUI:
         # 创建表格显示结果
         columns = ('策略', '股票代码', '股票名称', '选中时间')
         self.result_tree = ttk.Treeview(result_frame, columns=columns, show='headings', height=15)
+        
+        # 配置表格字体以支持中文
+        style = ttk.Style()
+        style.configure('Treeview', font=('Microsoft YaHei', 9))
+        style.configure('Treeview.Heading', font=('Microsoft YaHei', 10, 'bold'))
         
         for col in columns:
             self.result_tree.heading(col, text=col)
@@ -219,7 +234,8 @@ class StockTradingGUI:
         edit_frame = ttk.LabelFrame(config_frame, text="配置编辑", padding=10)
         edit_frame.pack(fill='both', expand=True, padx=10, pady=5)
         
-        self.config_text = scrolledtext.ScrolledText(edit_frame, wrap=tk.WORD, height=20)
+        self.config_text = scrolledtext.ScrolledText(edit_frame, wrap=tk.WORD, height=20,
+                                                     font=('Microsoft YaHei', 10))
         self.config_text.pack(fill='both', expand=True)
         
     def create_log_tab(self):
@@ -237,7 +253,7 @@ class StockTradingGUI:
         
         # 日志显示区域
         self.log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD, height=25, 
-                                                 font=('Consolas', 9))
+                                                 font=('Microsoft YaHei', 9))
         self.log_text.pack(fill='both', expand=True, padx=10, pady=5)
         
     def setup_logging(self):
@@ -281,36 +297,32 @@ class StockTradingGUI:
             
     def update_strategy_checkboxes(self):
         """更新策略选择复选框"""
-        # 清除现有的复选框
-        for widget in self.strategy_checkboxes.values():
-            widget.destroy()
-        self.strategy_checkboxes.clear()
-        self.strategy_vars.clear()
-        
-        # 获取策略框架
-        strategy_frame = None
-        for child in self.notebook.winfo_children():
-            if isinstance(child, ttk.Frame):
-                for grandchild in child.winfo_children():
-                    if isinstance(grandchild, ttk.LabelFrame) and "策略选择" in str(grandchild['text']):
-                        strategy_frame = grandchild
-                        break
-                if strategy_frame:
-                    break
-        
-        if not strategy_frame:
-            return
+        try:
+            # 清除现有的复选框
+            for widget in self.strategy_checkboxes.values():
+                widget.destroy()
+            self.strategy_checkboxes.clear()
+            self.strategy_vars.clear()
             
-        # 添加新的复选框
-        if "selectors" in self.config_data:
-            for i, selector in enumerate(self.config_data["selectors"]):
-                alias = selector.get("alias", selector.get("class", f"策略{i+1}"))
-                var = tk.BooleanVar(value=selector.get("activate", True))
-                checkbox = ttk.Checkbutton(strategy_frame, text=alias, variable=var)
-                checkbox.grid(row=i//3, column=i%3, sticky='w', padx=10, pady=2)
+            # 直接使用存储的策略框架引用
+            if not hasattr(self, 'strategy_frame') or not self.strategy_frame:
+                print("⚠️  策略框架未找到，跳过复选框更新")
+                return
                 
-                self.strategy_vars[selector["class"]] = var
-                self.strategy_checkboxes[selector["class"]] = checkbox
+            # 添加新的复选框
+            if "selectors" in self.config_data:
+                for i, selector in enumerate(self.config_data["selectors"]):
+                    alias = selector.get("alias", selector.get("class", f"策略{i+1}"))
+                    var = tk.BooleanVar(value=selector.get("activate", True))
+                    checkbox = ttk.Checkbutton(self.strategy_frame, text=alias, variable=var)
+                    checkbox.grid(row=i//3, column=i%3, sticky='w', padx=10, pady=2)
+                    
+                    self.strategy_vars[selector["class"]] = var
+                    self.strategy_checkboxes[selector["class"]] = checkbox
+                    
+            print(f"✅ 策略复选框更新完成: {len(self.strategy_checkboxes)} 个")
+        except Exception as e:
+            print(f"❌ 更新策略复选框失败: {e}")
                 
     def update_config_text(self):
         """更新配置文本显示"""
